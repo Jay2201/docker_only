@@ -1,16 +1,35 @@
-FROM ubuntu:latest
+# Good practice: Use official base images
+#
+FROM python:3.10-slim
 
-# Set the working directory in the image
-WORKDIR /app
+# Good practice: upgrade distro packages (with last security patches).
+#
+RUN apt-get update && apt-get -y upgrade \
+    && pip install --upgrade pip \
+    && pip --version
 
-# Copy the files from the host file system to the image file system
-COPY . /app
+RUN apt-get update && apt-get install -y procps \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install the necessary packages
-RUN apt-get update && apt-get install -y python3 python3-pip
+# Install mlflow dependencies:
+#
+WORKDIR /docker_only
 
-# Set environment variables
-ENV NAME World_only
+COPY . /docker_only
+RUN pip install --no-cache-dir -r requirements.txt \
+    && rm requirements.txt
+
+# Expose mlflow ports
+#
+EXPOSE 5000
+
+# Launch the mlflow server
+#
+CMD mlflow server --backend-store-uri ${BACKEND_STORE_URI} \
+                  --default-artifact-root ${DEFAULT_ARTIFACT_ROOT} \
+                  --artifacts-destination ${DEFAULT_ARTIFACTS_DESTINATION} \
+                  --no-serve-artifacts \
+                  --host 0.0.0.0 --port 5000
 
 # Run a command to start the application
 CMD ["python3", "app.py"]
