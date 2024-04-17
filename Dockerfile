@@ -3,8 +3,9 @@
 FROM python:3.10-slim
 
 # Good practice: upgrade distro packages (with last security patches).
-#
+
 RUN apt-get update && apt-get -y upgrade \
+    && apt-get install -y git \
     && pip install --upgrade pip \
     && pip --version
 
@@ -13,9 +14,11 @@ RUN apt-get update && apt-get install -y procps \
 
 # Install mlflow dependencies:
 #
-WORKDIR /docker_only
+WORKDIR /mlflow/
 
-COPY . /docker_only
+COPY requirements.txt .
+COPY app.py .
+
 RUN pip install --no-cache-dir -r requirements.txt \
     && rm requirements.txt
 
@@ -24,12 +27,12 @@ RUN pip install --no-cache-dir -r requirements.txt \
 EXPOSE 5000
 
 # Launch the mlflow server
-#
+
+# CMD ["python3", "app.py"]
+
 CMD mlflow server --backend-store-uri ${BACKEND_STORE_URI} \
                   --default-artifact-root ${DEFAULT_ARTIFACT_ROOT} \
                   --artifacts-destination ${DEFAULT_ARTIFACTS_DESTINATION} \
                   --no-serve-artifacts \
                   --host 0.0.0.0 --port 5000
 
-# Run a command to start the application
-CMD ["python3", "app.py"]
